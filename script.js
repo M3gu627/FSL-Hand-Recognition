@@ -61,14 +61,75 @@ function onResults(results) {
     ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
 
     if (results.multiHandLandmarks && results.multiHandedness) {
-        // Draw landmarks and connections for each hand
         for (let index = 0; index < results.multiHandLandmarks.length; index++) {
             const landmarks = results.multiHandLandmarks[index];
-            drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 3});
-            drawLandmarks(ctx, landmarks, {color: '#FF0000', lineWidth: 1, radius: 3});
+            const handedness = results.multiHandedness[index]; // Left/right hand info
 
-            // Update info
-            info.textContent = `Hands Detected: ${results.multiHandLandmarks.length}`;
+            // 1. Draw standard connections (skeleton lines) - Enhanced: Thicker and colored
+            drawConnectors(
+                ctx,
+                landmarks,
+                HAND_CONNECTIONS,
+                { color: handedness.label === 'Left' ? '#00FF00' : '#0000FF', lineWidth: 5 } // Green for left, blue for right; thicker lines
+            );
+
+            // 2. Draw landmarks (markers/dots) - Enhanced: Larger and colored
+            drawLandmarks(
+                ctx,
+                landmarks,
+                {
+                    color: handedness.label === 'Left' ? '#00FF00' : '#0000FF', // Match line color
+                    lineWidth: 2,
+                    radius: 5 // Larger markers for better visibility
+                }
+            );
+
+            // 3. Calculate hand center for pinning (average of all landmark positions)
+            let centerX = 0, centerY = 0;
+            landmarks.forEach(lm => {
+                centerX += lm.x * canvas.width; // Scale to canvas size
+                centerY += lm.y * canvas.height;
+            });
+            centerX /= landmarks.length;
+            centerY /= landmarks.length;
+
+            // 4. Draw pinning lines: From center to each landmark (pointers)
+            ctx.strokeStyle = '#FF0000'; // Red lines for pointers
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]); // Dashed lines for distinction (optional: remove for solid)
+            landmarks.forEach((lm, i) => {
+                const x = lm.x * canvas.width;
+                const y = lm.y * canvas.height;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+
+                // 5. Add arrowhead to end of pointer line (pinning effect)
+                const angle = Math.atan2(y - centerY, x - centerX);
+                ctx.save();
+                ctx.fillStyle = '#FF0000';
+                ctx.translate(x, y);
+                ctx.rotate(angle);
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(-10, 5);
+                ctx.lineTo(-10, -5);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+
+                // 6. Add text labels to markers (e.g., joint number or name)
+                ctx.fillStyle = '#FFFFFF'; // White text
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(i.toString(), x, y - 10); // Joint index (0-20)
+                // Optional: Custom labels, e.g., if (i === 4) ctx.fillText('Thumb Tip', x, y + 15);
+            });
+            ctx.setLineDash([]); // Reset to solid lines
+
+            // Update info with hand details
+            info.textContent = `${handedness.label} Hand Detected: ${results.multiHandLandmarks.length} hands`;
         }
     } else {
         info.textContent = 'Hands Detected: 0';

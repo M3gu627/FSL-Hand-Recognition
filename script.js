@@ -9,9 +9,9 @@ let camera;
 let hands;
 
 startBtn.addEventListener('click', async () => {
-    // Set canvas size
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    // Set canvas size to match video
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
 
     // Initialize Camera
     camera = new Camera(video, {
@@ -70,7 +70,7 @@ function onResults(results) {
                 ctx,
                 landmarks,
                 HAND_CONNECTIONS,
-                { color: handedness.label === 'Left' ? '#00FF00' : '#0000FF', lineWidth: 5 } // Green for left, blue for right; thicker lines
+                { color: handedness.label === 'Left' ? '#00FF00' : '#0000FF', lineWidth: 5 } // Green for left, blue for right
             );
 
             // 2. Draw landmarks (markers/dots) - Enhanced: Larger and colored
@@ -80,7 +80,7 @@ function onResults(results) {
                 {
                     color: handedness.label === 'Left' ? '#00FF00' : '#0000FF', // Match line color
                     lineWidth: 2,
-                    radius: 5 // Larger markers for better visibility
+                    radius: 5 // Larger markers
                 }
             );
 
@@ -96,7 +96,7 @@ function onResults(results) {
             // 4. Draw pinning lines: From center to each landmark (pointers)
             ctx.strokeStyle = '#FF0000'; // Red lines for pointers
             ctx.lineWidth = 2;
-            ctx.setLineDash([5, 5]); // Dashed lines for distinction (optional: remove for solid)
+            ctx.setLineDash([5, 5]); // Dashed lines (remove setLineDash([]) below for solid)
             landmarks.forEach((lm, i) => {
                 const x = lm.x * canvas.width;
                 const y = lm.y * canvas.height;
@@ -119,12 +119,11 @@ function onResults(results) {
                 ctx.fill();
                 ctx.restore();
 
-                // 6. Add text labels to markers (e.g., joint number or name)
+                // 6. Add text labels to markers (e.g., joint number)
                 ctx.fillStyle = '#FFFFFF'; // White text
                 ctx.font = '12px Arial';
                 ctx.textAlign = 'center';
                 ctx.fillText(i.toString(), x, y - 10); // Joint index (0-20)
-                // Optional: Custom labels, e.g., if (i === 4) ctx.fillText('Thumb Tip', x, y + 15);
             });
             ctx.setLineDash([]); // Reset to solid lines
 

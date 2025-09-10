@@ -2,7 +2,7 @@ body {
     font-family: Arial, sans-serif;
     background-color: #f0f0f0;
     margin: 0;
-    padding: 20px;
+    padding: 10px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -11,22 +11,30 @@ body {
 
 .container {
     text-align: center;
+    width: 100%;
     max-width: 800px;
 }
 
 h1 {
     color: #333;
+    font-size: 1.5em; /* Smaller for mobile */
+}
+
+p {
+    font-size: 1em;
+    margin: 10px 0;
 }
 
 button {
-    padding: 10px 20px;
+    padding: 12px 20px;
     font-size: 16px;
-    margin: 10px;
+    margin: 5px;
     background-color: #4CAF50;
     color: white;
     border: none;
     border-radius: 5px;
     cursor: pointer;
+    touch-action: manipulation; /* Improve touch responsiveness */
 }
 
 button:hover {
@@ -42,16 +50,37 @@ button:hover {
 }
 
 #video, #canvas {
-    width: 640px;
-    height: 480px;
+    width: 100%; /* Responsive width */
+    height: auto; /* Maintain aspect ratio */
+    max-width: 1280px; /* Cap at desktop resolution */
+    max-height: 720px;
     border: 2px solid #333;
     border-radius: 10px;
-    margin: 20px 0;
+    margin: 10px 0;
+    object-fit: contain; /* Fit content without stretching */
 }
 
 #info {
-    font-size: 18px;
+    font-size: 1em;
     font-weight: bold;
     color: #007bff;
     margin-top: 10px;
+}
+
+/* Media query for mobile devices (max width 768px) */
+@media (max-width: 768px) {
+    h1 {
+        font-size: 1.2em;
+    }
+    p {
+        font-size: 0.9em;
+    }
+    button {
+        padding: 10px 15px;
+        font-size: 14px;
+    }
+    #video, #canvas {
+        max-width: 100%; /* Full screen width on mobile */
+        max-height: 50vh; /* Limit height to 50% of viewport */
+    }
 }

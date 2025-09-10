@@ -48,6 +48,10 @@ body {
     text-align: center;
     max-width: 800px;
     margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
 h1 {
@@ -95,7 +99,7 @@ button:hover {
 
 #translation {
     width: 700px;
-    margin-top: 10px;
+    margin: 20px 0;
     padding: 10px;
     font-size: 16px;
     border: 2px solid #333;
@@ -103,4 +107,6 @@ button:hover {
     resize: vertical;
     background-color: #fff;
     display: block;
+    margin-left: auto;
+    margin-right: auto;
 }

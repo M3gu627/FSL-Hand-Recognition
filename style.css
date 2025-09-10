@@ -49,11 +49,23 @@ button:hover {
     background-color: #da190b;
 }
 
-#video, #canvas {
+#video {
     width: 100%;
     height: auto;
-    max-width: 1280px;
-    max-height: 720px;
+    max-width: 640px;
+    max-height: 480px;
+    border: 2px solid #333;
+    border-radius: 10px;
+    margin: 10px 0;
+    display: none; /* Hide video, show only canvas for synced view */
+}
+
+#canvas {
+    position: relative;
+    width: 100%;
+    height: auto;
+    max-width: 640px;
+    max-height: 480px;
     border: 2px solid #333;
     border-radius: 10px;
     margin: 10px 0;
@@ -65,6 +77,18 @@ button:hover {
     font-weight: bold;
     color: #007bff;
     margin-top: 10px;
+}
+
+#translation-box {
+    font-size: 1em;
+    color: #333;
+    margin-top: 10px;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+    max-width: 100%;
+    word-wrap: break-word;
 }
 
 @media (max-width: 768px) {
@@ -81,5 +105,8 @@ button:hover {
     #video, #canvas {
         max-width: 100%;
         max-height: 50vh;
+    }
+    #translation-box {
+        font-size: 0.9em;
     }
 }

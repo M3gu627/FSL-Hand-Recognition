@@ -1,4 +1,4 @@
-// script.js - Fixed version with improved performance and stability
+// script.js - Fixed version with proper canvas context initialization
 const videoElement = document.getElementById('video');
 const canvasElement = document.getElementById('canvas');
 const startBtn = document.getElementById('start-btn');
@@ -14,11 +14,16 @@ let lastDetectionTime = 0;
 let currentLandmarks = null;
 let currentHandedness = null;
 
-// Initialize canvas context once
-let ctx;
+// Initialize canvas context immediately
+let ctx = canvasElement.getContext('2d');
 
 startBtn.addEventListener('click', async () => {
     try {
+        // Ensure canvas context is available
+        if (!ctx) {
+            ctx = canvasElement.getContext('2d');
+        }
+        
         // Initialize MediaPipe Hands
         hands = new Hands({
             locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
@@ -47,18 +52,19 @@ startBtn.addEventListener('click', async () => {
 
         // Set up video event listener
         videoElement.addEventListener('loadedmetadata', () => {
-            const width = videoElement.videoWidth;
-            const height = videoElement.videoHeight;
+            const width = videoElement.videoWidth || 640;
+            const height = videoElement.videoHeight || 480;
             
             // Set canvas dimensions to match video
             canvasElement.width = width;
             canvasElement.height = height;
             
-            // Initialize canvas context
-            ctx = canvasElement.getContext('2d');
-            
             console.log(`Canvas dimensions set to: ${width}x${height}`);
         });
+
+        // Set initial canvas dimensions in case video metadata isn't available yet
+        canvasElement.width = 640;
+        canvasElement.height = 480;
 
         await camera.start();
         
@@ -115,8 +121,8 @@ function resetUI() {
         translationBox.textContent = 'Translation: No gesture detected';
     }
     
-    // Clear canvas
-    if (ctx) {
+    // Clear canvas with proper context check
+    if (ctx && canvasElement.width && canvasElement.height) {
         ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
     }
 }
@@ -126,7 +132,13 @@ function renderLoop() {
     
     animationId = requestAnimationFrame(renderLoop);
     
+    // Check if context and video are ready
     if (!ctx || !videoElement || videoElement.readyState < videoElement.HAVE_CURRENT_DATA) {
+        return;
+    }
+    
+    // Ensure canvas has dimensions
+    if (!canvasElement.width || !canvasElement.height) {
         return;
     }
     
@@ -179,7 +191,7 @@ function onResults(results) {
 }
 
 function drawHandLandmarks() {
-    if (!currentLandmarks || !ctx) return;
+    if (!currentLandmarks || !ctx || !canvasElement.width || !canvasElement.height) return;
     
     const landmarks = currentLandmarks;
     const color = currentHandedness === 'Left' ? '#00FF00' : '#0000FF';

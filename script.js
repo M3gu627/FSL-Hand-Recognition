@@ -1,4 +1,4 @@
-// script.js - Fixed version with proper canvas context initialization
+// script.js - Two hands support, no ghosting
 document.addEventListener("DOMContentLoaded", () => {
     const videoElement = document.getElementById('video');
     const canvasElement = document.getElementById('canvas');
@@ -7,18 +7,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const info = document.getElementById('info');
     const translationBox = document.getElementById('translation-box');
 
-    let ctx = canvasElement.getContext('2d'); // initialize after DOM is ready
+    let ctx = canvasElement.getContext('2d');
     let camera;
     let hands;
     let animationId;
     let isRunning = false;
     let lastDetectionTime = 0;
-    let currentLandmarks = null;
-    let currentHandedness = null;
+    let currentLandmarks = [];
+    let currentHandedness = [];
 
     startBtn.addEventListener('click', async () => {
         try {
-            if (!ctx) ctx = canvasElement.getContext('2d'); // double check ctx
+            if (!ctx) ctx = canvasElement.getContext('2d');
 
             // Initialize MediaPipe Hands
             hands = new Hands({
@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             hands.setOptions({
-                maxNumHands: 1,
+                maxNumHands: 2, // ✅ allow two hands
                 modelComplexity: 1,
                 minDetectionConfidence: 0.5,
                 minTrackingConfidence: 0.5
@@ -94,6 +94,8 @@ document.addEventListener("DOMContentLoaded", () => {
         info.textContent = 'Hands Detected: 0';
         if (translationBox) translationBox.textContent = 'Translation: No gesture detected';
         if (ctx) ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+        currentLandmarks = [];
+        currentHandedness = [];
     }
 
     function renderLoop() {
@@ -111,8 +113,11 @@ document.addEventListener("DOMContentLoaded", () => {
         ctx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
         ctx.restore();
 
-        if (currentLandmarks && (Date.now() - lastDetectionTime < 1000)) {
-            drawHandLandmarks();
+        // Draw all hands
+        if (currentLandmarks.length > 0) {
+            currentLandmarks.forEach((landmarks, index) => {
+                drawHandLandmarks(landmarks, currentHandedness[index]);
+            });
         }
     }
 
@@ -120,28 +125,32 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!isRunning) return;
         lastDetectionTime = Date.now();
 
-        if (results.multiHandLandmarks?.length > 0) {
-            currentLandmarks = results.multiHandLandmarks[0];
-            currentHandedness = results.multiHandedness[0].label;
-            info.textContent = `${currentHandedness} Hand detected`;
-            if (translationBox) translationBox.textContent = `Translation: ${currentHandedness} hand gesture detected`;
+        if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+            currentLandmarks = results.multiHandLandmarks;
+            currentHandedness = results.multiHandedness.map(h => h.label);
+
+            info.textContent = `Hands Detected: ${results.multiHandLandmarks.length}`;
+
+            if (translationBox) {
+                translationBox.textContent =
+                    `Translation: ${currentHandedness.join(", ")} gesture(s) detected`;
+            }
         } else {
-            setTimeout(() => {
-                if (Date.now() - lastDetectionTime > 500) {
-                    currentLandmarks = null;
-                    currentHandedness = null;
-                    info.textContent = 'Show your hand clearly';
-                    if (translationBox) translationBox.textContent = 'Translation: No gesture detected';
-                }
-            }, 300);
+            // ✅ immediately clear when no hands
+            currentLandmarks = [];
+            currentHandedness = [];
+            info.textContent = 'No hands detected';
+            if (translationBox) translationBox.textContent = 'Translation: No gesture detected';
         }
     }
 
-    function drawHandLandmarks() {
-        if (!currentLandmarks || !ctx) return;
+    function drawHandLandmarks(landmarks, handedness) {
+        if (!landmarks || !ctx) return;
 
-        const color = currentHandedness === 'Left' ? '#00FF00' : '#0000FF';
-        const adjustedLandmarks = currentLandmarks.map(p => ({
+        const color = handedness === 'Left' ? '#00FF00' : '#0000FF';
+
+        // Flip X coordinates for mirrored canvas
+        const adjusted = landmarks.map(p => ({
             x: (1 - p.x) * canvasElement.width,
             y: p.y * canvasElement.height
         }));
@@ -151,25 +160,25 @@ document.addEventListener("DOMContentLoaded", () => {
         ctx.beginPath();
 
         const connections = [
-            [0, 1], [1, 2], [2, 3], [3, 4],
-            [0, 5], [5, 6], [6, 7], [7, 8],
-            [9, 10], [10, 11], [11, 12],
-            [13, 14], [14, 15], [15, 16],
-            [17, 18], [18, 19], [19, 20],
-            [0, 17], [5, 9], [9, 13], [13, 17]
+            [0, 1], [1, 2], [2, 3], [3, 4],        // Thumb
+            [0, 5], [5, 6], [6, 7], [7, 8],        // Index finger
+            [9, 10], [10, 11], [11, 12],           // Middle finger
+            [13, 14], [14, 15], [15, 16],          // Ring finger
+            [17, 18], [18, 19], [19, 20],          // Pinky
+            [0, 17], [5, 9], [9, 13], [13, 17]     // Palm
         ];
 
         connections.forEach(([s, e]) => {
-            if (adjustedLandmarks[s] && adjustedLandmarks[e]) {
-                ctx.moveTo(adjustedLandmarks[s].x, adjustedLandmarks[s].y);
-                ctx.lineTo(adjustedLandmarks[e].x, adjustedLandmarks[e].y);
+            if (adjusted[s] && adjusted[e]) {
+                ctx.moveTo(adjusted[s].x, adjusted[s].y);
+                ctx.lineTo(adjusted[e].x, adjusted[e].y);
             }
         });
 
         ctx.stroke();
 
         ctx.fillStyle = color;
-        adjustedLandmarks.forEach(p => {
+        adjusted.forEach(p => {
             ctx.beginPath();
             ctx.arc(p.x, p.y, 4, 0, 2 * Math.PI);
             ctx.fill();

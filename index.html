@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hand Recognition with MediaPipe</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Load MediaPipe from CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
@@ -13,7 +14,7 @@
 <body>
     <div class="container">
         <h1>Hand Recognition Demo</h1>
-        <p>Tap "Start" to enable your camera and detect hand landmarks with pointers.</p>
+        <p>Click "Start" to enable your webcam and detect hand landmarks with pointers.</p>
         <button id="start-btn">Start Detection</button>
         <button id="stop-btn" style="display: none;">Stop Detection</button>
         <video id="video" autoplay playsinline style="display: none;"></video>

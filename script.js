@@ -1,4 +1,3 @@
-// script.js - Full verified code for hand recognition with landmarks, pointers, and labels
 const videoElement = document.getElementById('video');
 const canvasElement = document.getElementById('canvas');
 const ctx = canvasElement.getContext('2d');
@@ -66,6 +65,11 @@ function onResults(results) {
 
     if (results.multiHandLandmarks && results.multiHandedness) {
         console.log(`Hands detected: ${results.multiHandLandmarks.length}`);  // Debug log
+        // Collect handedness labels
+        const handLabels = results.multiHandedness.map(hand => `${hand.label} Hand`);
+        // Join labels for display (e.g., "Left Hand, Right Hand" or just "Left Hand")
+        info.textContent = handLabels.join(', ');
+        
         for (let index = 0; index < results.multiHandLandmarks.length; index++) {
             const landmarks = results.multiHandLandmarks[index];
             const handedness = results.multiHandedness[index].label;  // 'Left' or 'Right'
@@ -119,8 +123,6 @@ function onResults(results) {
                 ctx.fillText(i.toString(), x, y - 10);
             });
             ctx.setLineDash([]);  // Reset to solid
-
-            info.textContent = `${handedness} Hand: ${results.multiHandLandmarks.length} hands detected`;
         }
     } else {
         console.log('No hands detected this frame');  // Debug log

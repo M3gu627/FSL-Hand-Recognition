@@ -1,20 +1,22 @@
-const videoElement = document.getElementById('video');
 const canvasElement = document.getElementById('canvas');
 const ctx = canvasElement.getContext('2d');
 const startBtn = document.getElementById('start-btn');
 const stopBtn = document.getElementById('stop-btn');
 const info = document.getElementById('info');
 
+// Create an off-screen video element for camera feed processing
+const videoElement = document.createElement('video');
+videoElement.width = 640;
+videoElement.height = 480;
+
 let camera;
 let hands;
 
 startBtn.addEventListener('click', async () => {
-    // Dynamic canvas sizing after video loads
-    videoElement.addEventListener('loadedmetadata', () => {
-        canvasElement.width = videoElement.videoWidth;
-        canvasElement.height = videoElement.videoHeight;
-        console.log(`Canvas set to: ${canvasElement.width}x${canvasElement.height}`);
-    });
+    // Set canvas size
+    canvasElement.width = 640;
+    canvasElement.height = 480;
+    console.log(`Canvas set to: ${canvasElement.width}x${canvasElement.height}`);
 
     camera = new Camera(videoElement, {
         onFrame: async () => {
@@ -40,7 +42,6 @@ startBtn.addEventListener('click', async () => {
         console.log('Camera and Hands initialized successfully');
         startBtn.style.display = 'none';
         stopBtn.style.display = 'inline-block';
-        videoElement.style.display = 'block';
         canvasElement.style.display = 'block';
     } catch (error) {
         console.error('Error starting camera:', error);
@@ -53,7 +54,6 @@ stopBtn.addEventListener('click', () => {
     if (hands) hands.close();
     startBtn.style.display = 'inline-block';
     stopBtn.style.display = 'none';
-    videoElement.style.display = 'none';
     canvasElement.style.display = 'none';
     info.textContent = 'Hands Detected: 0';
 });
@@ -61,15 +61,14 @@ stopBtn.addEventListener('click', () => {
 function onResults(results) {
     ctx.save();
     ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-    ctx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+    // Do not draw the video feed; keep canvas black or draw landmarks only
 
     if (results.multiHandLandmarks && results.multiHandedness) {
         console.log(`Hands detected: ${results.multiHandLandmarks.length}`);  // Debug log
         // Collect handedness labels
         const handLabels = results.multiHandedness.map(hand => `${hand.label} Hand`);
-        // Join labels for display (e.g., "Left Hand, Right Hand" or just "Left Hand")
         info.textContent = handLabels.join(', ');
-        
+
         for (let index = 0; index < results.multiHandLandmarks.length; index++) {
             const landmarks = results.multiHandLandmarks[index];
             const handedness = results.multiHandedness[index].label;  // 'Left' or 'Right'

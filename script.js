@@ -1,4 +1,4 @@
-// script.js - Full code with non-inverted camera feed
+// script.js - Full code with mobile compatibility, non-inverted, and improved clarity
 const videoElement = document.getElementById('video');
 const canvasElement = document.getElementById('canvas');
 const ctx = canvasElement.getContext('2d');
@@ -10,22 +10,25 @@ let camera;
 let hands;
 
 startBtn.addEventListener('click', async () => {
-    // Dynamic canvas sizing after video loads
+    // Dynamic canvas sizing after video loads, adjusted for mobile
     videoElement.addEventListener('loadedmetadata', () => {
-        canvasElement.width = videoElement.videoWidth;
-        canvasElement.height = videoElement.videoHeight;
+        const maxWidth = Math.min(window.innerWidth, 1280); // Cap at 1280px or screen width
+        const aspectRatio = videoElement.videoWidth / videoElement.videoHeight;
+        canvasElement.width = maxWidth;
+        canvasElement.height = maxWidth / aspectRatio;
         console.log(`Canvas set to: ${canvasElement.width}x${canvasElement.height}`);
     });
 
-    // Initialize Camera with non-mirrored feed
+    // Initialize Camera with mobile-friendly settings
     camera = new Camera(videoElement, {
         onFrame: async () => {
             await hands.send({ image: videoElement });
         },
-        width: 640,
-        height: 480,
-        facingMode: 'user', // Front camera (default), can change to 'environment' for rear
-        mirror: false      // Disable mirroring to fix inversion
+        width: 640,  // Lowered for mobile performance (adjustable)
+        height: 480, // Lowered for mobile performance (adjustable)
+        facingMode: 'user', // Front camera for self-view
+        mirror: false,     // Non-inverted feed
+        frameRate: { ideal: 24 } // Reduced for mobile performance
     });
 
     hands = new Hands({
@@ -83,7 +86,7 @@ function onResults(results) {
                 centerY += lm.y * canvasElement.height;
             });
             centerX /= landmarks.length;
-            centerY /= landmarks.length;
+            centerY /= landmarks.height;
 
             ctx.strokeStyle = '#FF0000';
             ctx.lineWidth = 2;

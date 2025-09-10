@@ -2,7 +2,7 @@ body {
     font-family: Arial, sans-serif;
     background-color: #f0f0f0;
     margin: 0;
-    padding: 10px;
+    padding: 20px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -11,31 +11,22 @@ body {
 
 .container {
     text-align: center;
-    width: 100%;
     max-width: 800px;
-    position: relative;
 }
 
 h1 {
     color: #333;
-    font-size: 1.5em;
-}
-
-p {
-    font-size: 1em;
-    margin: 10px 0;
 }
 
 button {
-    padding: 12px 20px;
+    padding: 10px 20px;
     font-size: 16px;
-    margin: 5px;
+    margin: 10px;
     background-color: #4CAF50;
     color: white;
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    touch-action: manipulation;
 }
 
 button:hover {
@@ -50,71 +41,17 @@ button:hover {
     background-color: #da190b;
 }
 
-#video {
-    width: 100%;
-    height: auto;
-    max-width: 640px;
-    max-height: 480px;
+#video, #canvas {
+    width: 640px;
+    height: 480px;
     border: 2px solid #333;
     border-radius: 10px;
-    margin: 10px 0;
-    display: none; /* Hidden, canvas draws instead */
-}
-
-#canvas {
-    position: relative;
-    width: 100%;
-    height: auto;
-    max-width: 640px;
-    max-height: 480px;
-    border: 2px solid #333;
-    border-radius: 10px;
-    margin: 10px 0;
-    object-fit: contain;
-}
-
-#offscreen-canvas {
-    position: absolute;
-    top: 0;
-    left: 0;
-    visibility: hidden; /* Off-screen, used for drawing */
+    margin: 20px 0;
 }
 
 #info {
-    font-size: 1em;
+    font-size: 18px;
     font-weight: bold;
     color: #007bff;
     margin-top: 10px;
-}
-
-#translation-box {
-    font-size: 1em;
-    color: #333;
-    margin-top: 10px;
-    padding: 5px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    background-color: #f9f9f9;
-    max-width: 100%;
-    word-wrap: break-word;
-}
-
-@media (max-width: 768px) {
-    h1 {
-        font-size: 1.2em;
-    }
-    p {
-        font-size: 0.9em;
-    }
-    button {
-        padding: 10px 15px;
-        font-size: 14px;
-    }
-    #video, #canvas {
-        max-width: 100%;
-        max-height: 50vh;
-    }
-    #translation-box {
-        font-size: 0.9em;
-    }
 }

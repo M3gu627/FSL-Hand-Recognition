@@ -110,3 +110,14 @@ button:hover {
     margin-left: auto;
     margin-right: auto;
 }
+
+#recording-controls {
+    background: #fff;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+#letter-input {
+    padding: 5px;
+    margin-right: 10px;
+}

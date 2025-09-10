@@ -3,6 +3,7 @@ const ctx = canvasElement.getContext('2d');
 const startBtn = document.getElementById('start-btn');
 const stopBtn = document.getElementById('stop-btn');
 const info = document.getElementById('info');
+const translationBox = document.getElementById('translation');
 
 // Create an off-screen video element for camera feed processing
 const videoElement = document.createElement('video');
@@ -56,12 +57,12 @@ stopBtn.addEventListener('click', () => {
     stopBtn.style.display = 'none';
     canvasElement.style.display = 'none';
     info.textContent = 'Hands Detected: 0';
+    translationBox.value = '';
 });
 
 function onResults(results) {
     // Clear the canvas completely to avoid layering or duplication
     ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-    // Set a black background to ensure a clean slate
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvasElement.width, canvasElement.height);
 
@@ -69,6 +70,15 @@ function onResults(results) {
         console.log(`Hands detected: ${results.multiHandLandmarks.length}`);
         const handLabels = results.multiHandedness.map(hand => `${hand.label} Hand`);
         info.textContent = handLabels.join(', ');
+
+        // Placeholder translation logic (to be replaced with database lookup)
+        let translation = '';
+        if (results.multiHandLandmarks.length === 1) {
+            translation = 'Placeholder translation for single hand'; // Replace with database logic
+        } else if (results.multiHandLandmarks.length === 2) {
+            translation = 'Placeholder translation for two hands'; // Replace with database logic
+        }
+        translationBox.value = translation;
 
         for (let index = 0; index < results.multiHandLandmarks.length; index++) {
             const landmarks = results.multiHandLandmarks[index];
@@ -120,5 +130,6 @@ function onResults(results) {
     } else {
         console.log('No hands detected this frame');
         info.textContent = 'Hands Detected: 0 - Show your hand clearly';
+        translationBox.value = '';
     }
 }

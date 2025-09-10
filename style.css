@@ -17,7 +17,7 @@ body {
 
 h1 {
     color: #333;
-    font-size: 1.5em; /* Smaller for mobile */
+    font-size: 1.5em;
 }
 
 p {
@@ -34,7 +34,7 @@ button {
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    touch-action: manipulation; /* Improve touch responsiveness */
+    touch-action: manipulation;
 }
 
 button:hover {
@@ -50,14 +50,14 @@ button:hover {
 }
 
 #video, #canvas {
-    width: 100%; /* Responsive width */
-    height: auto; /* Maintain aspect ratio */
-    max-width: 1280px; /* Cap at desktop resolution */
+    width: 100%;
+    height: auto;
+    max-width: 1280px;
     max-height: 720px;
     border: 2px solid #333;
     border-radius: 10px;
     margin: 10px 0;
-    object-fit: contain; /* Fit content without stretching */
+    object-fit: contain;
 }
 
 #info {
@@ -67,7 +67,6 @@ button:hover {
     margin-top: 10px;
 }
 
-/* Media query for mobile devices (max width 768px) */
 @media (max-width: 768px) {
     h1 {
         font-size: 1.2em;
@@ -80,7 +79,7 @@ button:hover {
         font-size: 14px;
     }
     #video, #canvas {
-        max-width: 100%; /* Full screen width on mobile */
-        max-height: 50vh; /* Limit height to 50% of viewport */
+        max-width: 100%;
+        max-height: 50vh;
     }
 }

@@ -1,8 +1,8 @@
-// script.js - Refined fix for ghosting and sync, video flip, translation box, mobile compatibility
+// script.js - Adjusted per request, fixing ghosting and misalignment
 const videoElement = document.getElementById('video');
 const canvasElement = document.getElementById('canvas');
-const offscreenCanvas = document.createElement('canvas'); // Off-screen canvas
-const offscreenCtx = offscreenCanvas.getContext('2d');
+const offscreenCanvas = document.createElement('canvas'); // Off-screen for landmarks
+const offscreenCtx = offscreenCanvas.getContext('2d'); // Only off-screen context for landmarks
 const startBtn = document.getElementById('start-btn');
 const stopBtn = document.getElementById('stop-btn');
 const info = document.getElementById('info');
@@ -16,32 +16,35 @@ let lastDetectionTime = 0;
 
 startBtn.addEventListener('click', async () => {
     videoElement.addEventListener('loadedmetadata', () => {
-        canvasElement.width = videoElement.videoWidth;
-        offscreenCanvas.width = videoElement.videoWidth;
-        canvasElement.height = videoElement.videoHeight;
-        offscreenCanvas.height = videoElement.videoHeight;
-        console.log(`Canvas synced to video: ${canvasElement.width}x${canvasElement.height}`);
-        videoElement.style.transform = 'scaleX(-1)'; // Flip video feed
-        document.getElementById('offscreen-canvas')?.remove(); // Clean up old offscreen
-        document.body.appendChild(offscreenCanvas); // Add off-screen canvas
+        // Match canvas and off-screen to video dimensions exactly
+        const width = Math.min(videoElement.videoWidth, 640);
+        const height = width * (videoElement.videoHeight / videoElement.videoWidth);
+        canvasElement.width = width;
+        offscreenCanvas.width = width;
+        canvasElement.height = height;
+        offscreenCanvas.height = height;
+        console.log(`Canvas synced to video: ${width}x${height}`);
+        videoElement.style.transform = 'scaleX(-1)'; // Flip video
+        document.getElementById('offscreen-canvas')?.remove();
+        document.body.appendChild(offscreenCanvas); // Keep off-screen canvas
     });
 
     camera = new Camera(videoElement, {
         onFrame: async () => {
             await hands.send({ image: videoElement });
         },
-        width: 640,
-        height: 480,
+        width: 480, // Reduced for PC performance
+        height: 360, // Reduced for PC performance
         facingMode: 'user',
-        frameRate: { ideal: 24 }
+        frameRate: { ideal: 15 } // Lowered to reduce lag
     });
 
     hands = new Hands({
         locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
     });
     hands.setOptions({
-        maxNumHands: 2, // Multi-hand support
-        modelComplexity: 1,
+        maxNumHands: 1, // Limit to 1 hand to avoid multi-duplication
+        modelComplexity: 0, // Lower complexity for faster detection
         minDetectionConfidence: 0.3,
         minTrackingConfidence: 0.3
     });
@@ -54,7 +57,7 @@ startBtn.addEventListener('click', async () => {
         stopBtn.style.display = 'inline-block';
         videoElement.style.display = 'none';
         canvasElement.style.display = 'block';
-        renderLoop(); // Start synced rendering
+        renderLoop();
     } catch (error) {
         console.error('Error starting camera:', error);
         info.textContent = 'Error: ' + error.message;
@@ -76,66 +79,41 @@ stopBtn.addEventListener('click', () => {
 function renderLoop() {
     animationId = requestAnimationFrame(renderLoop);
     frameCount++;
-    if (frameCount % 30 === 0) console.log(`Frame count: ${frameCount}`); // Monitor frame rate
-    // Clear and draw video frame
+    if (frameCount % 30 === 0) console.log(`Frame count: ${frameCount}`); // Monitor performance
+    const ctx = canvasElement.getContext('2d'); // Re-initialize ctx per frame to avoid global state
     ctx.save();
-    ctx.resetTransform(); // Full reset of transformation matrix
-    ctx.clearRect(0, 0, canvasElement.width, canvasElement.height); // Clear entire canvas
+    ctx.resetTransform(); // Fully reset transformation
+    ctx.clearRect(0, 0, canvasElement.width, canvasElement.height); // Clear all
     if (videoElement.readyState === videoElement.HAVE_ENOUGH_DATA) {
         ctx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
     }
     ctx.restore();
 
-    // Copy off-screen landmarks only if updated
-    if (Date.now() - lastDetectionTime < 1000) { // Show landmarks for 1 second after last detection
+    // Copy landmarks only if recent detection
+    if (Date.now() - lastDetectionTime < 500) { // 0.5-second timeout
         ctx.drawImage(offscreenCanvas, 0, 0);
     } else {
-        offscreenCtx.clearRect(0, 0, offscreenCanvas.width, offscreenCanvas.height); // Clear old if stale
+        offscreenCtx.clearRect(0, 0, offscreenCanvas.width, offscreenCanvas.height); // Clear stale
     }
 }
 
 function onResults(results) {
-    lastDetectionTime = Date.now(); // Update last detection time
-    // Draw landmarks on off-screen canvas
+    lastDetectionTime = Date.now();
     offscreenCtx.save();
-    offscreenCtx.resetTransform(); // Reset transformation
-    offscreenCtx.clearRect(0, 0, offscreenCanvas.width, offscreenCanvas.height); // Clear off-screen
+    offscreenCtx.resetTransform(); // Reset off-screen transformation
+    offscreenCtx.clearRect(0, 0, offscreenCanvas.width, offscreenCanvas.height); // Clear before draw
     offscreenCtx.scale(-1, 1); // Flip for video inversion
     if (results.multiHandLandmarks && results.multiHandedness) {
         console.log(`Hands detected: ${results.multiHandLandmarks.length}, Time: ${lastDetectionTime}`);
-        for (let index = 0; index < results.multiHandLandmarks.length; index++) {
-            const landmarks = results.multiHandLandmarks[index];
-            const handedness = results.multiHandedness[index].label;
+        const landmarks = results.multiHandLandmarks[0]; // Single hand
+        const handedness = results.multiHandedness[0].label;
 
-            const lineColor = handedness === 'Left' ? '#00FF00' : '#0000FF';
-            drawConnectors(offscreenCtx, landmarks, HAND_CONNECTIONS, { color: lineColor, lineWidth: 5 });
-            drawLandmarks(offscreenCtx, landmarks, { color: lineColor, lineWidth: 2, radius: 5 });
+        const lineColor = handedness === 'Left' ? '#00FF00' : '#0000FF';
+        drawConnectors(offscreenCtx, landmarks, HAND_CONNECTIONS, { color: lineColor, lineWidth: 5 });
+        drawLandmarks(offscreenCtx, landmarks, { color: lineColor, lineWidth: 2, radius: 5 });
 
-            // Simplified pointers (remove for now to isolate ghosting)
-            let centerX = 0, centerY = 0;
-            landmarks.forEach(lm => {
-                centerX += lm.x * offscreenCanvas.width;
-                centerY += lm.y * offscreenCanvas.height;
-            });
-            centerX /= landmarks.length;
-            centerY /= landmarks.length;
-
-            offscreenCtx.strokeStyle = '#FF0000';
-            offscreenCtx.lineWidth = 2;
-            offscreenCtx.setLineDash([5, 5]);
-            landmarks.forEach((lm, i) => {
-                const x = lm.x * offscreenCanvas.width;
-                const y = lm.y * offscreenCanvas.height;
-                offscreenCtx.beginPath();
-                offscreenCtx.moveTo(-centerX, centerY);
-                offscreenCtx.lineTo(-x, y);
-                offscreenCtx.stroke();
-            });
-            offscreenCtx.setLineDash([]);
-
-            info.textContent = `${handedness} Hand: ${results.multiHandLandmarks.length} hands detected`;
-            translationBox.textContent = `Translation: Gesture ${index + 1} - Add FSL database`;
-        }
+        info.textContent = `${handedness} Hand detected`;
+        translationBox.textContent = `Translation: Gesture 1 - Add FSL database`;
     } else {
         console.log('No hands detected');
         info.textContent = 'Hands Detected: 0 - Show your hand clearly';

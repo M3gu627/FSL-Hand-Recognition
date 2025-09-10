@@ -1,4 +1,4 @@
-// script.js - Full verified code for hand recognition with landmarks, pointers, and labels
+// script.js - Full code with non-inverted camera feed
 const videoElement = document.getElementById('video');
 const canvasElement = document.getElementById('canvas');
 const ctx = canvasElement.getContext('2d');
@@ -17,12 +17,15 @@ startBtn.addEventListener('click', async () => {
         console.log(`Canvas set to: ${canvasElement.width}x${canvasElement.height}`);
     });
 
+    // Initialize Camera with non-mirrored feed
     camera = new Camera(videoElement, {
         onFrame: async () => {
             await hands.send({ image: videoElement });
         },
         width: 640,
-        height: 480
+        height: 480,
+        facingMode: 'user', // Front camera (default), can change to 'environment' for rear
+        mirror: false      // Disable mirroring to fix inversion
     });
 
     hands = new Hands({
@@ -31,8 +34,8 @@ startBtn.addEventListener('click', async () => {
     hands.setOptions({
         maxNumHands: 2,
         modelComplexity: 1,
-        minDetectionConfidence: 0.3,  // Lowered for easier detection
-        minTrackingConfidence: 0.3    // Lowered for easier detection
+        minDetectionConfidence: 0.3,
+        minTrackingConfidence: 0.3
     });
     hands.onResults(onResults);
 
@@ -65,19 +68,15 @@ function onResults(results) {
     ctx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
     if (results.multiHandLandmarks && results.multiHandedness) {
-        console.log(`Hands detected: ${results.multiHandLandmarks.length}`);  // Debug log
+        console.log(`Hands detected: ${results.multiHandLandmarks.length}`);
         for (let index = 0; index < results.multiHandLandmarks.length; index++) {
             const landmarks = results.multiHandLandmarks[index];
-            const handedness = results.multiHandedness[index].label;  // 'Left' or 'Right'
+            const handedness = results.multiHandedness[index].label;
 
-            // Draw skeleton connections (green for left, blue for right)
             const lineColor = handedness === 'Left' ? '#00FF00' : '#0000FF';
             drawConnectors(ctx, landmarks, HAND_CONNECTIONS, { color: lineColor, lineWidth: 5 });
-
-            // Draw landmark markers (larger dots)
             drawLandmarks(ctx, landmarks, { color: lineColor, lineWidth: 2, radius: 5 });
 
-            // Calculate hand center for pinning pointers
             let centerX = 0, centerY = 0;
             landmarks.forEach(lm => {
                 centerX += lm.x * canvasElement.width;
@@ -86,10 +85,9 @@ function onResults(results) {
             centerX /= landmarks.length;
             centerY /= landmarks.length;
 
-            // Draw red dashed pointer lines from center to each landmark
             ctx.strokeStyle = '#FF0000';
             ctx.lineWidth = 2;
-            ctx.setLineDash([5, 5]);  // Dashed style
+            ctx.setLineDash([5, 5]);
             landmarks.forEach((lm, i) => {
                 const x = lm.x * canvasElement.width;
                 const y = lm.y * canvasElement.height;
@@ -98,7 +96,6 @@ function onResults(results) {
                 ctx.lineTo(x, y);
                 ctx.stroke();
 
-                // Arrowhead at end of pointer
                 const angle = Math.atan2(y - centerY, x - centerX);
                 ctx.save();
                 ctx.fillStyle = '#FF0000';
@@ -112,18 +109,17 @@ function onResults(results) {
                 ctx.fill();
                 ctx.restore();
 
-                // Label each marker with joint number
                 ctx.fillStyle = '#FFFFFF';
                 ctx.font = '12px Arial';
                 ctx.textAlign = 'center';
                 ctx.fillText(i.toString(), x, y - 10);
             });
-            ctx.setLineDash([]);  // Reset to solid
+            ctx.setLineDash([]);
 
             info.textContent = `${handedness} Hand: ${results.multiHandLandmarks.length} hands detected`;
         }
     } else {
-        console.log('No hands detected this frame');  // Debug log
+        console.log('No hands detected this frame');
         info.textContent = 'Hands Detected: 0 - Show your hand clearly';
     }
     ctx.restore();

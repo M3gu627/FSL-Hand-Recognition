@@ -1,4 +1,4 @@
-// script.js - Full code with mobile compatibility, non-inverted, and improved clarity
+// script.js - Full code with fallback to fix inverted camera, mobile compatibility, and clarity
 const videoElement = document.getElementById('video');
 const canvasElement = document.getElementById('canvas');
 const ctx = canvasElement.getContext('2d');
@@ -17,18 +17,21 @@ startBtn.addEventListener('click', async () => {
         canvasElement.width = maxWidth;
         canvasElement.height = maxWidth / aspectRatio;
         console.log(`Canvas set to: ${canvasElement.width}x${canvasElement.height}`);
+        // Apply CSS flip if needed (fallback for inverted feed)
+        canvasElement.style.transform = 'scaleX(-1)'; // Flip horizontally
+        ctx.scale(-1, 1); // Adjust drawing context to match
     });
 
-    // Initialize Camera with mobile-friendly settings
+    // Initialize Camera with non-mirrored settings
     camera = new Camera(videoElement, {
         onFrame: async () => {
             await hands.send({ image: videoElement });
         },
-        width: 640,  // Lowered for mobile performance (adjustable)
-        height: 480, // Lowered for mobile performance (adjustable)
-        facingMode: 'user', // Front camera for self-view
-        mirror: false,     // Non-inverted feed
-        frameRate: { ideal: 24 } // Reduced for mobile performance
+        width: 640,  // Mobile-friendly resolution
+        height: 480, // Mobile-friendly resolution
+        facingMode: 'user', // Front camera
+        mirror: false,     // Explicitly disable mirroring
+        frameRate: { ideal: 24 } // Balanced for mobile
     });
 
     hands = new Hands({
@@ -68,7 +71,8 @@ stopBtn.addEventListener('click', () => {
 function onResults(results) {
     ctx.save();
     ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-    ctx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
+    ctx.scale(-1, 1); // Apply flip to drawing context
+    ctx.drawImage(results.image, -canvasElement.width, 0, canvasElement.width, canvasElement.height);
 
     if (results.multiHandLandmarks && results.multiHandedness) {
         console.log(`Hands detected: ${results.multiHandLandmarks.length}`);
@@ -86,7 +90,7 @@ function onResults(results) {
                 centerY += lm.y * canvasElement.height;
             });
             centerX /= landmarks.length;
-            centerY /= landmarks.height;
+            centerY /= landmarks.length;
 
             ctx.strokeStyle = '#FF0000';
             ctx.lineWidth = 2;
@@ -95,14 +99,14 @@ function onResults(results) {
                 const x = lm.x * canvasElement.width;
                 const y = lm.y * canvasElement.height;
                 ctx.beginPath();
-                ctx.moveTo(centerX, centerY);
-                ctx.lineTo(x, y);
+                ctx.moveTo(-centerX, centerY); // Adjust for flipped context
+                ctx.lineTo(-x, y);
                 ctx.stroke();
 
-                const angle = Math.atan2(y - centerY, x - centerX);
+                const angle = Math.atan2(y - centerY, -x - centerX); // Adjust angle
                 ctx.save();
                 ctx.fillStyle = '#FF0000';
-                ctx.translate(x, y);
+                ctx.translate(-x, y); // Adjust translation
                 ctx.rotate(angle);
                 ctx.beginPath();
                 ctx.moveTo(0, 0);
@@ -115,7 +119,7 @@ function onResults(results) {
                 ctx.fillStyle = '#FFFFFF';
                 ctx.font = '12px Arial';
                 ctx.textAlign = 'center';
-                ctx.fillText(i.toString(), x, y - 10);
+                ctx.fillText(i.toString(), -x, y - 10); // Adjust text position
             });
             ctx.setLineDash([]);
 

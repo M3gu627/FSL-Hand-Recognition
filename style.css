@@ -58,7 +58,7 @@ button:hover {
 }
 
 #translation {
-    width: 640px;
+    width: 700px;
     margin-top: 10px;
     padding: 10px;
     font-size: 16px;
@@ -68,3 +68,4 @@ button:hover {
     background-color: #fff;
     display: block; /* Ensure it is visible by default */
 }
+

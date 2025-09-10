@@ -66,4 +66,5 @@ button:hover {
     border-radius: 5px;
     resize: vertical;
     background-color: #fff;
+    display: block; /* Ensure it is visible by default */
 }

@@ -44,6 +44,7 @@ startBtn.addEventListener('click', async () => {
         startBtn.style.display = 'none';
         stopBtn.style.display = 'inline-block';
         canvasElement.style.display = 'block';
+        translationBox.value = '--/--/--'; // Set default on start
     } catch (error) {
         console.error('Error starting camera:', error);
         info.textContent = 'Error: ' + error.message;
@@ -57,7 +58,7 @@ stopBtn.addEventListener('click', () => {
     stopBtn.style.display = 'none';
     canvasElement.style.display = 'none';
     info.textContent = 'Hands Detected: 0';
-    translationBox.value = '';
+    translationBox.value = '--/--/--';
 });
 
 function onResults(results) {
@@ -72,7 +73,7 @@ function onResults(results) {
         info.textContent = handLabels.join(', ');
 
         // Placeholder translation logic (to be replaced with database lookup)
-        let translation = '';
+        let translation = '--/--/--'; // Default when no gesture is recognized
         if (results.multiHandLandmarks.length === 1) {
             translation = 'Placeholder translation for single hand'; // Replace with database logic
         } else if (results.multiHandLandmarks.length === 2) {
@@ -130,6 +131,6 @@ function onResults(results) {
     } else {
         console.log('No hands detected this frame');
         info.textContent = 'Hands Detected: 0 - Show your hand clearly';
-        translationBox.value = '';
+        translationBox.value = '--/--/--';
     }
 }

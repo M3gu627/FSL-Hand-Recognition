@@ -13,6 +13,7 @@ body {
     text-align: center;
     width: 100%;
     max-width: 800px;
+    position: relative;
 }
 
 h1 {
@@ -57,7 +58,7 @@ button:hover {
     border: 2px solid #333;
     border-radius: 10px;
     margin: 10px 0;
-    display: none; /* Hide video, show only canvas for synced view */
+    display: none; /* Hidden, canvas draws instead */
 }
 
 #canvas {
@@ -70,6 +71,13 @@ button:hover {
     border-radius: 10px;
     margin: 10px 0;
     object-fit: contain;
+}
+
+#offscreen-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    visibility: hidden; /* Off-screen, used for drawing */
 }
 
 #info {

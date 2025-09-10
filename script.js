@@ -1,4 +1,4 @@
-// script.js - Full code with fallback to fix inverted camera, mobile compatibility, and clarity
+// script.js - Full code with improved camera clarity and non-inverted feed
 const videoElement = document.getElementById('video');
 const canvasElement = document.getElementById('canvas');
 const ctx = canvasElement.getContext('2d');
@@ -10,28 +10,24 @@ let camera;
 let hands;
 
 startBtn.addEventListener('click', async () => {
-    // Dynamic canvas sizing after video loads, adjusted for mobile
+    // Dynamic canvas sizing after video loads
     videoElement.addEventListener('loadedmetadata', () => {
-        const maxWidth = Math.min(window.innerWidth, 1280); // Cap at 1280px or screen width
-        const aspectRatio = videoElement.videoWidth / videoElement.videoHeight;
-        canvasElement.width = maxWidth;
-        canvasElement.height = maxWidth / aspectRatio;
+        canvasElement.width = videoElement.videoWidth;
+        canvasElement.height = videoElement.videoHeight;
         console.log(`Canvas set to: ${canvasElement.width}x${canvasElement.height}`);
-        // Apply CSS flip if needed (fallback for inverted feed)
-        canvasElement.style.transform = 'scaleX(-1)'; // Flip horizontally
-        ctx.scale(-1, 1); // Adjust drawing context to match
     });
 
-    // Initialize Camera with non-mirrored settings
+    // Initialize Camera with higher resolution and non-mirrored feed
     camera = new Camera(videoElement, {
         onFrame: async () => {
             await hands.send({ image: videoElement });
         },
-        width: 640,  // Mobile-friendly resolution
-        height: 480, // Mobile-friendly resolution
+        width: 1280,  // Increased resolution for clarity
+        height: 720,  // Increased resolution for clarity
         facingMode: 'user', // Front camera
-        mirror: false,     // Explicitly disable mirroring
-        frameRate: { ideal: 24 } // Balanced for mobile
+        mirror: false,     // Non-inverted feed
+        // Optional: Add frame rate constraint (if supported by device)
+        frameRate: { ideal: 30 } // Target 30 FPS for smoother video
     });
 
     hands = new Hands({
@@ -71,8 +67,7 @@ stopBtn.addEventListener('click', () => {
 function onResults(results) {
     ctx.save();
     ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-    ctx.scale(-1, 1); // Apply flip to drawing context
-    ctx.drawImage(results.image, -canvasElement.width, 0, canvasElement.width, canvasElement.height);
+    ctx.drawImage(results.image, 0, 0, canvasElement.width, canvasElement.height);
 
     if (results.multiHandLandmarks && results.multiHandedness) {
         console.log(`Hands detected: ${results.multiHandLandmarks.length}`);
@@ -99,14 +94,14 @@ function onResults(results) {
                 const x = lm.x * canvasElement.width;
                 const y = lm.y * canvasElement.height;
                 ctx.beginPath();
-                ctx.moveTo(-centerX, centerY); // Adjust for flipped context
-                ctx.lineTo(-x, y);
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(x, y);
                 ctx.stroke();
 
-                const angle = Math.atan2(y - centerY, -x - centerX); // Adjust angle
+                const angle = Math.atan2(y - centerY, x - centerX);
                 ctx.save();
                 ctx.fillStyle = '#FF0000';
-                ctx.translate(-x, y); // Adjust translation
+                ctx.translate(x, y);
                 ctx.rotate(angle);
                 ctx.beginPath();
                 ctx.moveTo(0, 0);
@@ -119,7 +114,7 @@ function onResults(results) {
                 ctx.fillStyle = '#FFFFFF';
                 ctx.font = '12px Arial';
                 ctx.textAlign = 'center';
-                ctx.fillText(i.toString(), -x, y - 10); // Adjust text position
+                ctx.fillText(i.toString(), x, y - 10);
             });
             ctx.setLineDash([]);
 

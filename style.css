@@ -12,7 +12,6 @@ body {
 .container {
     text-align: center;
     max-width: 800px;
-    width: 100%;
 }
 
 h1 {
@@ -43,43 +42,11 @@ button:hover {
 }
 
 #video, #canvas {
-    max-width: 100%;
-    height: auto;
     width: 640px;
+    height: 480px;
     border: 2px solid #333;
     border-radius: 10px;
     margin: 20px 0;
-}
-
-/* Mobile-specific styles */
-@media (max-width: 768px) {
-    body {
-        padding: 10px;
-    }
-    
-    #video, #canvas {
-        width: 100%;
-        max-width: 480px;
-    }
-    
-    .container {
-        padding: 0 10px;
-    }
-    
-    button {
-        font-size: 14px;
-        padding: 8px 16px;
-    }
-}
-
-/* Prevent video from being flipped by browser */
-#video {
-    transform: scaleX(-1);
-}
-
-/* Keep canvas normal for consistent rendering */
-#canvas {
-    transform: none;
 }
 
 #info {

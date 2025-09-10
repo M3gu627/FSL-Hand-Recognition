@@ -1,4 +1,4 @@
-// script.js - Full code with video flip to fix inverted camera, mobile compatibility, and clarity
+// script.js - Full code with fallback to fix inverted camera, mobile compatibility, and clarity
 const videoElement = document.getElementById('video');
 const canvasElement = document.getElementById('canvas');
 const ctx = canvasElement.getContext('2d');
@@ -17,11 +17,12 @@ startBtn.addEventListener('click', async () => {
         canvasElement.width = maxWidth;
         canvasElement.height = maxWidth / aspectRatio;
         console.log(`Canvas set to: ${canvasElement.width}x${canvasElement.height}`);
-        // Flip the video element to correct inversion
-        videoElement.style.transform = 'scaleX(-1)';
+        // Apply CSS flip if needed (fallback for inverted feed)
+        canvasElement.style.transform = 'scaleX(-1)'; // Flip horizontally
+        ctx.scale(-1, 1); // Adjust drawing context to match
     });
 
-    // Initialize Camera without relying on mirror option
+    // Initialize Camera with non-mirrored settings
     camera = new Camera(videoElement, {
         onFrame: async () => {
             await hands.send({ image: videoElement });
@@ -29,6 +30,7 @@ startBtn.addEventListener('click', async () => {
         width: 640,  // Mobile-friendly resolution
         height: 480, // Mobile-friendly resolution
         facingMode: 'user', // Front camera
+        mirror: false,     // Explicitly disable mirroring
         frameRate: { ideal: 24 } // Balanced for mobile
     });
 
@@ -69,8 +71,7 @@ stopBtn.addEventListener('click', () => {
 function onResults(results) {
     ctx.save();
     ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-    // Draw flipped video to match transform
-    ctx.scale(-1, 1); // Flip horizontally in context
+    ctx.scale(-1, 1); // Apply flip to drawing context
     ctx.drawImage(results.image, -canvasElement.width, 0, canvasElement.width, canvasElement.height);
 
     if (results.multiHandLandmarks && results.multiHandedness) {
@@ -98,14 +99,14 @@ function onResults(results) {
                 const x = lm.x * canvasElement.width;
                 const y = lm.y * canvasElement.height;
                 ctx.beginPath();
-                ctx.moveTo(-centerX, centerY); // Flip center point
-                ctx.lineTo(-x, y); // Flip x-coordinate
+                ctx.moveTo(-centerX, centerY); // Adjust for flipped context
+                ctx.lineTo(-x, y);
                 ctx.stroke();
 
-                const angle = Math.atan2(y - centerY, -x - centerX); // Adjust angle for flip
+                const angle = Math.atan2(y - centerY, -x - centerX); // Adjust angle
                 ctx.save();
                 ctx.fillStyle = '#FF0000';
-                ctx.translate(-x, y); // Flip translation
+                ctx.translate(-x, y); // Adjust translation
                 ctx.rotate(angle);
                 ctx.beginPath();
                 ctx.moveTo(0, 0);
@@ -118,7 +119,7 @@ function onResults(results) {
                 ctx.fillStyle = '#FFFFFF';
                 ctx.font = '12px Arial';
                 ctx.textAlign = 'center';
-                ctx.fillText(i.toString(), -x, y - 10); // Flip text position
+                ctx.fillText(i.toString(), -x, y - 10); // Adjust text position
             });
             ctx.setLineDash([]);
 

@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FSL Hand Recognition</title>
-    <link rel="stylesheet" href="style (1).css">
+    <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
 </head>
 <body>
     <div class="navbar">
@@ -24,9 +25,8 @@
         <button id="start-btn">Start Detection</button>
         <button id="stop-btn" style="display: none;">Stop Detection</button>
         <button id="toggle-record">Toggle Recording Mode</button>
-        <button id="tts-toggle-btn">Disable TTS</button>
-        <div id="recording-controls" style="display: none;">
-            <input id="letter-input" type="text" placeholder="Enter letter (A-Z)">
+        <div id="recording-controls" style="display: none; margin: 10px;">
+            <input type="text" id="letter-input" placeholder="Enter letter (A-Z)" maxlength="1">
             <button id="record-btn">Record Sample</button>
             <button id="export-db-btn">Export Database</button>
         </div>
@@ -35,6 +35,6 @@
         <textarea id="translation" readonly>--/--/--</textarea>
     </div>
 
-    <script src="script (1).js"></script>
+    <script src="script.js"></script>
 </body>
 </html>

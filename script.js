@@ -19,6 +19,7 @@ let camera;
 let hands;
 let recordedSamples = {}; // { 'A': [sample1, sample2, ...], ... }
 let fslDatabase = {}; // Loaded JSON database
+let isRecordingMode = false; // Track recording mode state
 
 // Load database on startup
 async function loadDatabase() {
@@ -36,6 +37,35 @@ async function loadDatabase() {
         fslDatabase = {};
         info.textContent = 'No database found. Use recording mode to add FSL letters.';
     }
+}
+
+// Function to draw gridlines on canvas
+function drawGridlines() {
+    ctx.strokeStyle = '#444444'; // Dark gray color for gridlines
+    ctx.lineWidth = 1;
+    ctx.setLineDash([2, 2]); // Dashed lines
+    
+    const gridSize = 40; // Grid cell size in pixels
+    const width = canvasElement.width;
+    const height = canvasElement.height;
+    
+    // Draw vertical lines
+    for (let x = 0; x <= width; x += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+    }
+    
+    // Draw horizontal lines
+    for (let y = 0; y <= height; y += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+    }
+    
+    ctx.setLineDash([]); // Reset dash pattern
 }
 
 startBtn.addEventListener('click', async () => {
@@ -86,10 +116,16 @@ stopBtn.addEventListener('click', () => {
     info.textContent = 'Hands Detected: 0';
     translationBox.value = '--/--/--';
     recordingControls.style.display = 'none';
+    isRecordingMode = false; // Reset recording mode when stopping
 });
 
 toggleRecordBtn.addEventListener('click', () => {
-    recordingControls.style.display = recordingControls.style.display === 'none' ? 'block' : 'none';
+    const isVisible = recordingControls.style.display !== 'none';
+    recordingControls.style.display = isVisible ? 'none' : 'block';
+    isRecordingMode = !isVisible; // Toggle recording mode state
+    
+    // Update button text to indicate current state
+    toggleRecordBtn.textContent = isRecordingMode ? 'Exit Recording Mode' : 'Toggle Recording Mode';
 });
 
 recordBtn.addEventListener('click', () => {
@@ -181,6 +217,11 @@ function onResults(res) {
     ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvasElement.width, canvasElement.height);
+
+    // Draw gridlines if in recording mode
+    if (isRecordingMode) {
+        drawGridlines();
+    }
 
     if (results.multiHandLandmarks && results.multiHandedness) {
         console.log(`Hands detected: ${results.multiHandLandmarks.length}`);

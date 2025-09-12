@@ -20,6 +20,7 @@ let hands;
 let recordedSamples = {}; // { 'A': [sample1, sample2, ...], ... }
 let fslDatabase = {}; // Loaded JSON database
 let isRecordingMode = false; // Track recording mode state
+let selectedLetter = null; // Store the selected letter for recording
 
 // Load database on startup
 async function loadDatabase() {
@@ -116,26 +117,44 @@ stopBtn.addEventListener('click', () => {
     info.textContent = 'Hands Detected: 0';
     translationBox.value = '--/--/--';
     recordingControls.style.display = 'none';
-    isRecordingMode = false; // Reset recording mode when stopping
+    isRecordingMode = false; // Reset recording mode
+    selectedLetter = null; // Clear selected letter
+    letterInput.value = ''; // Clear input field
+    toggleRecordBtn.textContent = 'Toggle Recording Mode'; // Reset button text
 });
 
 toggleRecordBtn.addEventListener('click', () => {
-    const isVisible = recordingControls.style.display !== 'none';
-    recordingControls.style.display = isVisible ? 'none' : 'block';
-    isRecordingMode = !isVisible; // Toggle recording mode state
-    
-    // Update button text to indicate current state
-    toggleRecordBtn.textContent = isRecordingMode ? 'Exit Recording Mode' : 'Toggle Recording Mode';
+    if (!isRecordingMode) {
+        // Prompt for letter selection when entering recording mode
+        const letter = prompt('Enter a letter (A-Z) to record:', '').toUpperCase();
+        if (!letter || !/[A-Z]/.test(letter)) {
+            alert('Please enter a valid letter A-Z.');
+            return;
+        }
+        selectedLetter = letter;
+        letterInput.value = selectedLetter; // Set the input field to the selected letter
+        recordingControls.style.display = 'block';
+        isRecordingMode = true;
+        toggleRecordBtn.textContent = 'Exit Recording Mode';
+        info.textContent = `Recording for letter: ${selectedLetter}`;
+    } else {
+        // Exit recording mode
+        recordingControls.style.display = 'none';
+        isRecordingMode = false;
+        selectedLetter = null;
+        letterInput.value = '';
+        toggleRecordBtn.textContent = 'Toggle Recording Mode';
+        info.textContent = 'Hands Detected: 0';
+    }
 });
 
 recordBtn.addEventListener('click', () => {
-    if (!results || !results.multiHandLandmarks || results.multiHandLandmarks.length !== 1) {
-        alert('Show one hand clearly to record.');
+    if (!isRecordingMode || !selectedLetter) {
+        alert('Please enter recording mode and select a letter first.');
         return;
     }
-    const letter = letterInput.value.toUpperCase();
-    if (!letter || !/[A-Z]/.test(letter)) {
-        alert('Enter a valid letter A-Z.');
+    if (!results || !results.multiHandLandmarks || results.multiHandLandmarks.length !== 1) {
+        alert('Show one hand clearly to record.');
         return;
     }
 
@@ -143,11 +162,10 @@ recordBtn.addEventListener('click', () => {
     const flattened = landmarks.flatMap(lm => [lm.x, lm.y, lm.z]);
     const normalized = normalizeLandmarks(flattened);
 
-    if (!recordedSamples[letter]) recordedSamples[letter] = [];
-    recordedSamples[letter].push(normalized);
+    if (!recordedSamples[selectedLetter]) recordedSamples[selectedLetter] = [];
+    recordedSamples[selectedLetter].push(normalized);
 
-    alert(`Recorded sample for ${letter}. Total: ${recordedSamples[letter].length}`);
-    letterInput.value = '';
+    alert(`Recorded sample for ${selectedLetter}. Total: ${recordedSamples[selectedLetter].length}`);
 });
 
 exportDbBtn.addEventListener('click', () => {
@@ -226,10 +244,10 @@ function onResults(res) {
     if (results.multiHandLandmarks && results.multiHandedness) {
         console.log(`Hands detected: ${results.multiHandLandmarks.length}`);
         const handLabels = results.multiHandedness.map(hand => `${hand.label} Hand`);
-        info.textContent = handLabels.join(', ');
+        info.textContent = isRecordingMode ? `Recording for letter: ${selectedLetter}` : handLabels.join(', ');
 
         let translation = '--/--/--';
-        if (results.multiHandLandmarks.length === 1) {
+        if (results.multiHandLandmarks.length === 1 && !isRecordingMode) {
             const landmarks = results.multiHandLandmarks[0];
             const flattened = landmarks.flatMap(lm => [lm.x, lm.y, lm.z]);
             const normalized = normalizeLandmarks(flattened);
@@ -296,7 +314,7 @@ function onResults(res) {
         }
     } else {
         console.log('No hands detected this frame');
-        info.textContent = 'Hands Detected: 0 - Show your hand clearly';
+        info.textContent = isRecordingMode ? `Recording for letter: ${selectedLetter}` : 'Hands Detected: 0 - Show your hand clearly';
         translationBox.value = '--/--/--';
     }
 }

@@ -85,11 +85,12 @@ stopBtn.addEventListener('click', () => {
     canvasElement.style.display = 'none';
     info.textContent = 'Hands Detected: 0';
     translationBox.value = '--/--/--';
-    recordingControls.style.display = 'none';
+    recordingControls.classList.add('hidden'); // ✅ hide properly
 });
 
+// ✅ Fixed toggle using class
 toggleRecordBtn.addEventListener('click', () => {
-    recordingControls.style.display = recordingControls.style.display === 'none' ? 'block' : 'none';
+    recordingControls.classList.toggle('hidden');
 });
 
 recordBtn.addEventListener('click', () => {

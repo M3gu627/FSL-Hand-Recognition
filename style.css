@@ -81,14 +81,6 @@ button:hover {
     background-color: #da190b;
 }
 
-#tts-toggle-btn {
-    background-color: #007bff;
-}
-
-#tts-toggle-btn:hover {
-    background-color: #0056b3;
-}
-
 #canvas {
     width: 640px;
     height: 480px;

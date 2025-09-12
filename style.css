@@ -121,3 +121,8 @@ button:hover {
     padding: 5px;
     margin-right: 10px;
 }
+
+/* ✅ Hidden state for toggling */
+.hidden {
+    display: none !important;
+}

@@ -19,8 +19,6 @@ let camera;
 let hands;
 let recordedSamples = {}; // { 'A': [sample1, sample2, ...], ... }
 let fslDatabase = {}; // Loaded JSON database
-let isRecordingMode = false; // Track recording mode state
-let selectedLetter = null; // Store the selected letter for recording
 
 // Load database on startup
 async function loadDatabase() {
@@ -38,35 +36,6 @@ async function loadDatabase() {
         fslDatabase = {};
         info.textContent = 'No database found. Use recording mode to add FSL letters.';
     }
-}
-
-// Function to draw gridlines on canvas
-function drawGridlines() {
-    ctx.strokeStyle = '#444444'; // Dark gray color for gridlines
-    ctx.lineWidth = 1;
-    ctx.setLineDash([2, 2]); // Dashed lines
-    
-    const gridSize = 40; // Grid cell size in pixels
-    const width = canvasElement.width;
-    const height = canvasElement.height;
-    
-    // Draw vertical lines
-    for (let x = 0; x <= width; x += gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, height);
-        ctx.stroke();
-    }
-    
-    // Draw horizontal lines
-    for (let y = 0; y <= height; y += gridSize) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(width, y);
-        ctx.stroke();
-    }
-    
-    ctx.setLineDash([]); // Reset dash pattern
 }
 
 startBtn.addEventListener('click', async () => {
@@ -117,44 +86,20 @@ stopBtn.addEventListener('click', () => {
     info.textContent = 'Hands Detected: 0';
     translationBox.value = '--/--/--';
     recordingControls.style.display = 'none';
-    isRecordingMode = false; // Reset recording mode
-    selectedLetter = null; // Clear selected letter
-    letterInput.value = ''; // Clear input field
-    toggleRecordBtn.textContent = 'Toggle Recording Mode'; // Reset button text
 });
 
 toggleRecordBtn.addEventListener('click', () => {
-    if (!isRecordingMode) {
-        // Prompt for letter selection when entering recording mode
-        const letter = prompt('Enter a letter (A-Z) to record:', '').toUpperCase();
-        if (!letter || !/[A-Z]/.test(letter)) {
-            alert('Please enter a valid letter A-Z.');
-            return;
-        }
-        selectedLetter = letter;
-        letterInput.value = selectedLetter; // Set the input field to the selected letter
-        recordingControls.style.display = 'block';
-        isRecordingMode = true;
-        toggleRecordBtn.textContent = 'Exit Recording Mode';
-        info.textContent = `Recording for letter: ${selectedLetter}`;
-    } else {
-        // Exit recording mode
-        recordingControls.style.display = 'none';
-        isRecordingMode = false;
-        selectedLetter = null;
-        letterInput.value = '';
-        toggleRecordBtn.textContent = 'Toggle Recording Mode';
-        info.textContent = 'Hands Detected: 0';
-    }
+    recordingControls.style.display = recordingControls.style.display === 'none' ? 'block' : 'none';
 });
 
 recordBtn.addEventListener('click', () => {
-    if (!isRecordingMode || !selectedLetter) {
-        alert('Please enter recording mode and select a letter first.');
-        return;
-    }
     if (!results || !results.multiHandLandmarks || results.multiHandLandmarks.length !== 1) {
         alert('Show one hand clearly to record.');
+        return;
+    }
+    const letter = letterInput.value.toUpperCase();
+    if (!letter || !/[A-Z]/.test(letter)) {
+        alert('Enter a valid letter A-Z.');
         return;
     }
 
@@ -162,10 +107,11 @@ recordBtn.addEventListener('click', () => {
     const flattened = landmarks.flatMap(lm => [lm.x, lm.y, lm.z]);
     const normalized = normalizeLandmarks(flattened);
 
-    if (!recordedSamples[selectedLetter]) recordedSamples[selectedLetter] = [];
-    recordedSamples[selectedLetter].push(normalized);
+    if (!recordedSamples[letter]) recordedSamples[letter] = [];
+    recordedSamples[letter].push(normalized);
 
-    alert(`Recorded sample for ${selectedLetter}. Total: ${recordedSamples[selectedLetter].length}`);
+    alert(`Recorded sample for ${letter}. Total: ${recordedSamples[letter].length}`);
+    letterInput.value = '';
 });
 
 exportDbBtn.addEventListener('click', () => {
@@ -236,18 +182,13 @@ function onResults(res) {
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvasElement.width, canvasElement.height);
 
-    // Draw gridlines if in recording mode
-    if (isRecordingMode) {
-        drawGridlines();
-    }
-
     if (results.multiHandLandmarks && results.multiHandedness) {
         console.log(`Hands detected: ${results.multiHandLandmarks.length}`);
         const handLabels = results.multiHandedness.map(hand => `${hand.label} Hand`);
-        info.textContent = isRecordingMode ? `Recording for letter: ${selectedLetter}` : handLabels.join(', ');
+        info.textContent = handLabels.join(', ');
 
         let translation = '--/--/--';
-        if (results.multiHandLandmarks.length === 1 && !isRecordingMode) {
+        if (results.multiHandLandmarks.length === 1) {
             const landmarks = results.multiHandLandmarks[0];
             const flattened = landmarks.flatMap(lm => [lm.x, lm.y, lm.z]);
             const normalized = normalizeLandmarks(flattened);
@@ -314,7 +255,7 @@ function onResults(res) {
         }
     } else {
         console.log('No hands detected this frame');
-        info.textContent = isRecordingMode ? `Recording for letter: ${selectedLetter}` : 'Hands Detected: 0 - Show your hand clearly';
+        info.textContent = 'Hands Detected: 0 - Show your hand clearly';
         translationBox.value = '--/--/--';
     }
 }

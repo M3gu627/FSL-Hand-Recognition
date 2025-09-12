@@ -9,7 +9,6 @@ const letterInput = document.getElementById('letter-input');
 const recordBtn = document.getElementById('record-btn');
 const exportDbBtn = document.getElementById('export-db-btn');
 const toggleRecordBtn = document.getElementById('toggle-record');
-const ttsToggleBtn = document.getElementById('tts-toggle-btn');
 
 // Create an off-screen video element for camera feed processing
 const videoElement = document.createElement('video');
@@ -20,10 +19,6 @@ let camera;
 let hands;
 let recordedSamples = {}; // { 'A': [sample1, sample2, ...], ... }
 let fslDatabase = {}; // Loaded JSON database
-let speechSynth = window.speechSynthesis; // Access the SpeechSynthesis API
-let isTtsEnabled = true; // Flag to enable/disable TTS (default: on)
-let lastSpoken = null; // Track the last spoken letter to avoid repeats
-let results; // Store results globally for recording
 
 // Load database on startup
 async function loadDatabase() {
@@ -76,15 +71,6 @@ startBtn.addEventListener('click', async () => {
         stopBtn.style.display = 'inline-block';
         canvasElement.style.display = 'block';
         translationBox.value = '--/--/--';
-        // Speak welcome message if TTS is enabled
-        if (isTtsEnabled) {
-            const utterance = new SpeechSynthesisUtterance('You are currently using Filipino Sign Language translator');
-            utterance.lang = 'en-US'; // Use English for clarity; adjust to 'fil-PH' if Filipino voice is available
-            utterance.volume = 1;
-            utterance.rate = 0.8;
-            utterance.pitch = 1;
-            speechSynth.speak(utterance);
-        }
     } catch (error) {
         console.error('Error starting camera:', error);
         info.textContent = 'Error: ' + error.message;
@@ -94,7 +80,6 @@ startBtn.addEventListener('click', async () => {
 stopBtn.addEventListener('click', () => {
     if (camera) camera.stop();
     if (hands) hands.close();
-    speechSynth.cancel(); // Stop any ongoing speech
     startBtn.style.display = 'inline-block';
     stopBtn.style.display = 'none';
     canvasElement.style.display = 'none';
@@ -151,12 +136,6 @@ exportDbBtn.addEventListener('click', () => {
     URL.revokeObjectURL(url);
 });
 
-ttsToggleBtn.addEventListener('click', () => {
-    isTtsEnabled = !isTtsEnabled;
-    ttsToggleBtn.textContent = isTtsEnabled ? 'Disable TTS' : 'Enable TTS';
-    info.textContent += ` | TTS: ${isTtsEnabled ? 'On' : 'Off'}`;
-});
-
 function normalizeLandmarks(flatLandmarks) {
     const landmarks = [];
     for (let i = 0; i < 21; i++) {
@@ -196,22 +175,7 @@ function euclideanDistance(vec1, vec2) {
     return Math.sqrt(vec1.reduce((sum, val, i) => sum + (val - vec2[i]) ** 2, 0));
 }
 
-function speakLetter(letter) {
-    if (!isTtsEnabled || !letter || letter === lastSpoken) return; // Skip if disabled, empty, or repeat
-
-    const utterance = new SpeechSynthesisUtterance(`F S L letter ${letter}`);
-    utterance.lang = 'en-US'; // Set language (adjust for Filipino if needed, e.g., 'fil-PH')
-    utterance.volume = 1; // 0 to 1
-    utterance.rate = 0.8; // Speed (0.1 to 10)
-    utterance.pitch = 1; // Pitch (0 to 2)
-
-    speechSynth.speak(utterance);
-    lastSpoken = letter; // Update to prevent immediate repeats
-
-    // Reset lastSpoken after speech ends (optional, for chaining letters)
-    utterance.onend = () => { lastSpoken = null; };
-}
-
+let results; // Store results globally for recording
 function onResults(res) {
     results = res; // Save for recording
     ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
@@ -239,9 +203,6 @@ function onResults(res) {
                 }
             });
             translation = bestMatch ? `FSL Letter: ${bestMatch}` : '--/--/--';
-            if (bestMatch) {
-                speakLetter(bestMatch);
-            }
         }
         translationBox.value = translation;
 

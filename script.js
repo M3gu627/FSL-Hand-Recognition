@@ -10,6 +10,9 @@ const recordBtn = document.getElementById('record-btn');
 const exportDbBtn = document.getElementById('export-db-btn');
 const toggleRecordBtn = document.getElementById('toggle-record');
 
+// NEW: Track gridline visibility
+let showGrid = false;
+
 // Create an off-screen video element for camera feed processing
 const videoElement = document.createElement('video');
 videoElement.width = 640;
@@ -17,8 +20,8 @@ videoElement.height = 480;
 
 let camera;
 let hands;
-let recordedSamples = {}; // { 'A': [sample1, sample2, ...], ... }
-let fslDatabase = {}; // Loaded JSON database
+let recordedSamples = {}; 
+let fslDatabase = {}; 
 
 // Load database on startup
 async function loadDatabase() {
@@ -39,7 +42,6 @@ async function loadDatabase() {
 }
 
 startBtn.addEventListener('click', async () => {
-    // Set canvas size
     canvasElement.width = 640;
     canvasElement.height = 480;
     console.log(`Canvas set to: ${canvasElement.width}x${canvasElement.height}`);
@@ -85,12 +87,13 @@ stopBtn.addEventListener('click', () => {
     canvasElement.style.display = 'none';
     info.textContent = 'Hands Detected: 0';
     translationBox.value = '--/--/--';
-    recordingControls.classList.add('hidden'); // ✅ hide properly
+    recordingControls.style.display = 'none';
+    showGrid = false;
 });
 
-// ✅ Fixed toggle using class
 toggleRecordBtn.addEventListener('click', () => {
-    recordingControls.classList.toggle('hidden');
+    recordingControls.style.display = recordingControls.style.display === 'none' ? 'block' : 'none';
+    showGrid = !showGrid; // Toggle grid visibility
 });
 
 recordBtn.addEventListener('click', () => {
@@ -147,7 +150,6 @@ function normalizeLandmarks(flatLandmarks) {
         });
     }
 
-    // Center to wrist (landmark 0)
     const wrist = landmarks[0];
     landmarks.forEach(lm => {
         lm.x -= wrist.x;
@@ -155,7 +157,6 @@ function normalizeLandmarks(flatLandmarks) {
         lm.z -= wrist.z;
     });
 
-    // Scale by max distance
     let maxDist = 0;
     landmarks.forEach(lm => {
         const dist = Math.sqrt(lm.x**2 + lm.y**2 + lm.z**2);
@@ -176,12 +177,48 @@ function euclideanDistance(vec1, vec2) {
     return Math.sqrt(vec1.reduce((sum, val, i) => sum + (val - vec2[i]) ** 2, 0));
 }
 
-let results; // Store results globally for recording
+// ✅ Draw gridlines
+function drawGridlines(ctx, width, height, step = 80) {
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.lineWidth = 1;
+
+    for (let x = step; x < width; x += step) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+    }
+
+    for (let y = step; y < height; y += step) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+    }
+
+    // Center crosshair
+    ctx.strokeStyle = 'rgba(255, 0, 0, 0.4)';
+    ctx.beginPath();
+    ctx.moveTo(width / 2, 0);
+    ctx.lineTo(width / 2, height);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, height / 2);
+    ctx.lineTo(width, height / 2);
+    ctx.stroke();
+}
+
+let results; 
 function onResults(res) {
-    results = res; // Save for recording
+    results = res; 
     ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvasElement.width, canvasElement.height);
+
+    // ✅ Draw grid if enabled
+    if (showGrid) {
+        drawGridlines(ctx, canvasElement.width, canvasElement.height, 80);
+    }
 
     if (results.multiHandLandmarks && results.multiHandedness) {
         console.log(`Hands detected: ${results.multiHandLandmarks.length}`);
@@ -255,7 +292,6 @@ function onResults(res) {
             ctx.setLineDash([]);
         }
     } else {
-        console.log('No hands detected this frame');
         info.textContent = 'Hands Detected: 0 - Show your hand clearly';
         translationBox.value = '--/--/--';
     }

@@ -4,11 +4,6 @@ const startBtn = document.getElementById('start-btn');
 const stopBtn = document.getElementById('stop-btn');
 const info = document.getElementById('info');
 const translationBox = document.getElementById('translation');
-const recordingControls = document.getElementById('recording-controls');
-const letterInput = document.getElementById('letter-input');
-const recordBtn = document.getElementById('record-btn');
-const exportDbBtn = document.getElementById('export-db-btn');
-const toggleRecordBtn = document.getElementById('toggle-record');
 
 // Create an off-screen video element for camera feed processing
 const videoElement = document.createElement('video');
@@ -17,26 +12,6 @@ videoElement.height = 480;
 
 let camera;
 let hands;
-let recordedSamples = {}; // { 'A': [sample1, sample2, ...], ... }
-let fslDatabase = {}; // Loaded JSON database
-
-// Load database on startup
-async function loadDatabase() {
-    try {
-        const response = await fetch('fsl_database.json');
-        fslDatabase = await response.json();
-        if (Object.keys(fslDatabase).length === 0) {
-            console.warn('FSL database is empty. Record samples to build it.');
-            info.textContent = 'No database found. Use recording mode to add FSL letters.';
-        } else {
-            console.log('FSL database loaded:', Object.keys(fslDatabase));
-        }
-    } catch (error) {
-        console.error('Failed to load database:', error);
-        fslDatabase = {};
-        info.textContent = 'No database found. Use recording mode to add FSL letters.';
-    }
-}
 
 startBtn.addEventListener('click', async () => {
     // Set canvas size
@@ -64,13 +39,12 @@ startBtn.addEventListener('click', async () => {
     hands.onResults(onResults);
 
     try {
-        await loadDatabase();
         await camera.start();
         console.log('Camera and Hands initialized successfully');
         startBtn.style.display = 'none';
         stopBtn.style.display = 'inline-block';
         canvasElement.style.display = 'block';
-        translationBox.value = '--/--/--';
+        translationBox.value = '--/--/--'; // Set default on start
     } catch (error) {
         console.error('Error starting camera:', error);
         info.textContent = 'Error: ' + error.message;
@@ -85,99 +59,10 @@ stopBtn.addEventListener('click', () => {
     canvasElement.style.display = 'none';
     info.textContent = 'Hands Detected: 0';
     translationBox.value = '--/--/--';
-    recordingControls.style.display = 'none';
 });
 
-toggleRecordBtn.addEventListener('click', () => {
-    recordingControls.style.display = recordingControls.style.display === 'none' ? 'block' : 'none';
-});
-
-recordBtn.addEventListener('click', () => {
-    if (!results || !results.multiHandLandmarks || results.multiHandLandmarks.length !== 1) {
-        alert('Show one hand clearly to record.');
-        return;
-    }
-    const letter = letterInput.value.toUpperCase();
-    if (!letter || !/[A-Z]/.test(letter)) {
-        alert('Enter a valid letter A-Z.');
-        return;
-    }
-
-    const landmarks = results.multiHandLandmarks[0];
-    const flattened = landmarks.flatMap(lm => [lm.x, lm.y, lm.z]);
-    const normalized = normalizeLandmarks(flattened);
-
-    if (!recordedSamples[letter]) recordedSamples[letter] = [];
-    recordedSamples[letter].push(normalized);
-
-    alert(`Recorded sample for ${letter}. Total: ${recordedSamples[letter].length}`);
-    letterInput.value = '';
-});
-
-exportDbBtn.addEventListener('click', () => {
-    const database = {};
-    Object.keys(recordedSamples).forEach(letter => {
-        const samples = recordedSamples[letter];
-        if (samples.length > 0) {
-            const avg = samples[0].map((_, i) => 
-                samples.reduce((sum, sample) => sum + sample[i], 0) / samples.length
-            );
-            database[letter] = avg;
-        }
-    });
-
-    const dataStr = JSON.stringify(database, null, 2);
-    const blob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'fsl_database.json';
-    a.click();
-    URL.revokeObjectURL(url);
-});
-
-function normalizeLandmarks(flatLandmarks) {
-    const landmarks = [];
-    for (let i = 0; i < 21; i++) {
-        landmarks.push({
-            x: flatLandmarks[i*3],
-            y: flatLandmarks[i*3 + 1],
-            z: flatLandmarks[i*3 + 2]
-        });
-    }
-
-    // Center to wrist (landmark 0)
-    const wrist = landmarks[0];
-    landmarks.forEach(lm => {
-        lm.x -= wrist.x;
-        lm.y -= wrist.y;
-        lm.z -= wrist.z;
-    });
-
-    // Scale by max distance
-    let maxDist = 0;
-    landmarks.forEach(lm => {
-        const dist = Math.sqrt(lm.x**2 + lm.y**2 + lm.z**2);
-        if (dist > maxDist) maxDist = dist;
-    });
-    if (maxDist > 0) {
-        landmarks.forEach(lm => {
-            lm.x /= maxDist;
-            lm.y /= maxDist;
-            lm.z /= maxDist;
-        });
-    }
-
-    return landmarks.flatMap(lm => [lm.x, lm.y, lm.z]);
-}
-
-function euclideanDistance(vec1, vec2) {
-    return Math.sqrt(vec1.reduce((sum, val, i) => sum + (val - vec2[i]) ** 2, 0));
-}
-
-let results; // Store results globally for recording
-function onResults(res) {
-    results = res; // Save for recording
+function onResults(results) {
+    // Clear the canvas completely to avoid layering or duplication
     ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvasElement.width, canvasElement.height);
@@ -187,22 +72,12 @@ function onResults(res) {
         const handLabels = results.multiHandedness.map(hand => `${hand.label} Hand`);
         info.textContent = handLabels.join(', ');
 
-        let translation = '--/--/--';
+        // Placeholder translation logic (to be replaced with database lookup)
+        let translation = '--/--/--'; // Default when no gesture is recognized
         if (results.multiHandLandmarks.length === 1) {
-            const landmarks = results.multiHandLandmarks[0];
-            const flattened = landmarks.flatMap(lm => [lm.x, lm.y, lm.z]);
-            const normalized = normalizeLandmarks(flattened);
-
-            let bestMatch = null;
-            let minDistance = Infinity;
-            Object.entries(fslDatabase).forEach(([letter, template]) => {
-                const distance = euclideanDistance(normalized, template);
-                if (distance < minDistance && distance < 0.5) {
-                    minDistance = distance;
-                    bestMatch = letter;
-                }
-            });
-            translation = bestMatch ? `FSL Letter: ${bestMatch}` : '--/--/--';
+            translation = 'Placeholder translation for single hand'; // Replace with database logic
+        } else if (results.multiHandLandmarks.length === 2) {
+            translation = 'Placeholder translation for two hands'; // Replace with database logic
         }
         translationBox.value = translation;
 

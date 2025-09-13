@@ -19,6 +19,7 @@ let camera;
 let hands;
 let recordedSamples = {}; // { 'A': [sample1, sample2, ...], ... }
 let fslDatabase = {}; // Loaded JSON database
+let isRecordingMode = false; // Track recording mode state
 
 // Load database on startup
 async function loadDatabase() {
@@ -86,10 +87,12 @@ stopBtn.addEventListener('click', () => {
     info.textContent = 'Hands Detected: 0';
     translationBox.value = '--/--/--';
     recordingControls.style.display = 'none';
+    isRecordingMode = false; // Reset recording mode
 });
 
 toggleRecordBtn.addEventListener('click', () => {
-    recordingControls.style.display = recordingControls.style.display === 'none' ? 'block' : 'none';
+    isRecordingMode = !isRecordingMode;
+    recordingControls.style.display = isRecordingMode ? 'block' : 'none';
 });
 
 recordBtn.addEventListener('click', () => {
@@ -175,12 +178,41 @@ function euclideanDistance(vec1, vec2) {
     return Math.sqrt(vec1.reduce((sum, val, i) => sum + (val - vec2[i]) ** 2, 0));
 }
 
+function drawGrid() {
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]);
+
+    // Vertical lines
+    for (let x = 0; x <= canvasElement.width; x += 80) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvasElement.height);
+        ctx.stroke();
+    }
+
+    // Horizontal lines
+    for (let y = 0; y <= canvasElement.height; y += 80) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvasElement.width, y);
+        ctx.stroke();
+    }
+
+    ctx.setLineDash([]);
+}
+
 let results; // Store results globally for recording
 function onResults(res) {
     results = res; // Save for recording
     ctx.clearRect(0, 0, canvasElement.width, canvasElement.height);
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvasElement.width, canvasElement.height);
+
+    // Draw grid if in recording mode
+    if (isRecordingMode) {
+        drawGrid();
+    }
 
     if (results.multiHandLandmarks && results.multiHandedness) {
         console.log(`Hands detected: ${results.multiHandLandmarks.length}`);
